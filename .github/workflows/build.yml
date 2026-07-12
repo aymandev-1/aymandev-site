@@ -1,0 +1,40 @@
+name: Build site from source
+
+# Regenerates the deployed index.html from the editable source
+# (src/aymandev-source.html) whenever the source changes. Edit the source,
+# push, and this rebuilds + commits index.html, which Vercel then deploys.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/aymandev-source.html'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-site
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate index.html from source
+        run: cp src/aymandev-source.html index.html
+
+      - name: Commit and push if index.html changed
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "index.html already up to date; nothing to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add index.html
+            git commit -m "chore: build index.html from src/aymandev-source.html"
+            git push
+          fi
